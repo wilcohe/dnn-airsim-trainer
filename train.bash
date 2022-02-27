@@ -8,15 +8,15 @@ exit_gracefully(){
 
 # https://cravencode.com/post/essentials/parallel-commands-bash-scripts/
 
-cd ~/Documents/Simulators/Airsim/<etc>
+cd ~/Documents/Simulators/Airsim/docker
 
-<path to launch airsim > & 
+./run_airsim_image_binary.sh airsim_binary:11.0-devel-ubuntu20.04 Blocks/Blocks.sh -windowed -resX=1080 -resY=720 --settings ./settings.json & 
 
 AIRSIM_PID=$!
 
 wait $AIRSIM_PID
 
-python3 ../IRALScripts/control_model/unsupervised_training.py ../IRALScripts/control/model/models/unsupervised_model ../IRALScripts/paths/<path> & 
+python3 ../IRALScripts/control_model/unsupervised_training.py ../IRALScripts/control_model/models/unsupervised_model ../IRALScripts/control_model/paths/squiggle_1.csv & 
 
 PYTHON_PID=$!
 

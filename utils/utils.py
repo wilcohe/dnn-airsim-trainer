@@ -1,25 +1,27 @@
-from arch import lcc_conv, lcc_dense
+from arch.lipschitz import lcc_dense
 from tensorflow import keras
 import tensorflow as tf
 import airsim
 import numpy as np
+import os, sys
+import signal
 
-def loadPaths(path): 
+def loadPath(path): 
 	"""
 	Load CSV Path
 	input: path string
 	"""
 
-	if !os.path.exists(path): 
+	if not os.path.exists(path): 
 		print(f"Path {path} does not exist")
-		return -1
+		sys.exit(-1)
 
 	try: 
-		path = np.genfromtxt("path", delimiter=',')
+		paths = np.genfromtxt(path)
 	except Exception as e: 
 		raise e
 
-	return path 
+	return paths
 
 
 def reset():
@@ -37,29 +39,29 @@ def parseState(state):
 	Parse KinematicsState Variable to DNN-friendly shape
 	input: airsim KinematicsState type
 	"""
-	pos = state.KinematicsState.position.to_numpy_array()
-	vel = state.KinematicsState.linear_velocity.to_numpy_array()
-	attitude = airsim.utils.to_euler_angles(state.KinematicsState.orientation).to_numpy_array()
-	rates = state.KinematicsState.angular_velocity.to_numpy_array()
+	pos = state.kinematics_estimated.position.to_numpy_array().reshape(-1, 1)
+	vel = state.kinematics_estimated.linear_velocity.to_numpy_array().reshape(-1, 1)
+	attitude = np.array(airsim.utils.to_eularian_angles(state.kinematics_estimated.orientation)).reshape(-1, 1)
+	rates = state.kinematics_estimated.angular_velocity.to_numpy_array().reshape(-1, 1)
 
-	return np.array([state.timestamp, pos, vel, attitude, rates]).reshape(-1, 1)
+	return np.vstack([state.timestamp, pos, vel, attitude, rates]).reshape(-1, 1)
 
 def loadModel(path=""): 
-	if !os.path.exists(path): 
+	if not os.path.exists(path): 
 
 		print(f"Path {path} does not exist")
 
-		reg = lcc_dense(1, 16)
+		reg = lcc_dense(1, 16)["kernel_constraint"]
 
 		# Generate model structure
 		inp = keras.Input(shape=(24,))
-		x = keras.Dense(48, activation='tanh', kernel_constraint=reg)(inp)
-		x = keras.Dense(96, activation='relu', kernel_constraint=reg)(x)
-		x = keras.Dense(36, activation='tanh', kernel_constraint=reg)(x)
-		x = keras.Dense(12, activation='softmax', kernel_constraint=reg)(x)
-		output_rpy = keras.Dense(3, activation='tanh', kernel_constraint=reg)(x)
-		output_t = keras.Dense(1, activation='sigmoid', kernel_constraint=reg)(x)
-		outputs = keras.concatenate([output_rpy, output_t])
+		x = keras.layers.Dense(48, activation='tanh', kernel_constraint=reg)(inp)
+		x = keras.layers.Dense(96, activation='relu', kernel_constraint=reg)(x)
+		x = keras.layers.Dense(36, activation='tanh', kernel_constraint=reg)(x)
+		x = keras.layers.Dense(12, activation='softmax', kernel_constraint=reg)(x)
+		output_rpy = keras.layers.Dense(3, activation='tanh', kernel_constraint=reg)(x)
+		output_t = keras.layers.Dense(1, activation='sigmoid', kernel_constraint=reg)(x)
+		outputs = keras.layers.Concatenate()([output_rpy, output_t])
 
 		# Define the loss function
 		def cust_loss(y_waypoint, y_resultant): 

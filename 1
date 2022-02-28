@@ -10,11 +10,7 @@ exit_gracefully(){
 
 cd ~/Documents/Simulators/Airsim/docker
 
-echo $(pwd)
-
 ./run_airsim_image_binary.sh airsim_binary:11.0-devel-ubuntu20.04 Blocks/Blocks.sh -windowed -resX=1080 -resY=720 --settings ./settings.json & 
-
-sleep 10
 
 AIRSIM_PID=$!
 
@@ -40,13 +36,13 @@ do
 	else
 		kill -n 9 $PYTHON_PID
 
-		./run_airsim_image_binary.sh airsim_binary:11.0-devel-ubuntu20.04 Blocks/Blocks.sh -windowed -resX=1080 -resY=720 --settings ./settings.json & 
+		<path to launch airsim > & 
 
 		AIRSIM_PID=$!
 
 		wait $AIRSIM_PID
 
-		python3 ../IRALScripts/control_model/unsupervised_training.py ../IRALScripts/control_model/models/unsupervised_model ../IRALScripts/control_model/paths/squiggle_1.csv & 
+		python3 ../IRALScripts/unsupervised_training.py ../IRALScripts/models/unsupervised_model ../IRALScripts/paths/squiggle_1.csv & 
 
 		PYTHON_PID=$!
 
